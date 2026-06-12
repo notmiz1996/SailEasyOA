@@ -1,0 +1,13 @@
+# apps/notification/apps.py
+
+"""
+notification 应用的 Django AppConfig
+"""
+
+from django.apps import AppConfig
+
+
+class NotificationConfig(AppConfig):
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'apps.notification'
+    verbose_name = '消息通知'
