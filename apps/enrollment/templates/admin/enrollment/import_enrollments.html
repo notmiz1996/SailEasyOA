@@ -1,0 +1,152 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static admin_urls %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" type="text/css" href="{% static "admin/css/forms.css" %}">
+  <style>
+    .import-container { max-width: 800px; margin: 20px auto; }
+    .import-container .form-row { margin-bottom: 16px; }
+    .import-container .form-row label { display: block; font-weight: 600; margin-bottom: 4px; }
+    .import-container .form-row .help { font-size: 12px; color: #666; margin-top: 4px; }
+    .import-container .submit-row { margin-top: 20px; }
+
+    /* 导入结果卡片 */
+    .result-card {
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 20px;
+      margin: 20px 0;
+      background: #fafafa;
+    }
+    .result-card h3 { margin-top: 0; }
+    .result-summary {
+      display: flex; gap: 24px; margin: 12px 0;
+    }
+    .result-summary .stat {
+      text-align: center; padding: 12px 20px;
+      border-radius: 6px; min-width: 100px;
+    }
+    .result-summary .stat.success { background: #d4edda; color: #155724; }
+    .result-summary .stat.fail    { background: #f8d7da; color: #721c24; }
+    .result-summary .stat.total   { background: #e2e3e5; color: #383d41; }
+    .result-summary .stat .number { font-size: 28px; font-weight: bold; display: block; }
+    .result-summary .stat .label  { font-size: 13px; }
+
+    /* 错误明细表格 */
+    .error-table {
+      width: 100%; border-collapse: collapse;
+      margin-top: 12px; font-size: 13px;
+    }
+    .error-table th {
+      background: #f1f1f1; text-align: left;
+      padding: 8px 12px; border: 1px solid #ddd;
+    }
+    .error-table td {
+      padding: 6px 12px; border: 1px solid #ddd;
+    }
+    .error-table tr:hover { background: #f9f9f9; }
+    .back-link { margin-top: 16px; display: inline-block; }
+  </style>
+{% endblock %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+    &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+    &rsaquo; <a href="{% url opts|admin_urlname:'changelist' %}">{{ opts.verbose_name_plural }}</a>
+    &rsaquo; {{ title }}
+  </div>
+{% endblock %}
+
+{% block content %}
+<div class="import-container">
+  <h1>{{ title }}</h1>
+
+  {% if result %}
+    {# ======== 导入结果展示 ======== #}
+    <div class="result-card">
+      <h3>📊 导入结果</h3>
+      <div class="result-summary">
+        <div class="stat total">
+          <span class="number">{{ result.total }}</span>
+          <span class="label">总行数</span>
+        </div>
+        <div class="stat success">
+          <span class="number">{{ result.success }}</span>
+          <span class="label">✅ 成功</span>
+        </div>
+        <div class="stat fail">
+          <span class="number">{{ result.fail }}</span>
+          <span class="label">❌ 失败</span>
+        </div>
+      </div>
+
+      {% if result.errors %}
+        <h4 style="margin-bottom: 4px;">错误明细</h4>
+        <table class="error-table">
+          <thead>
+            <tr>
+              <th>行号</th>
+              <th>错误类型</th>
+              <th>错误消息</th>
+              <th>原始数据</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for err in result.errors %}
+            <tr>
+              <td>{{ err.row_num }}</td>
+              <td>{{ err.error_type }}</td>
+              <td>{{ err.error_message }}</td>
+              <td style="max-width: 300px; word-break: break-all; font-size: 12px;">
+                {{ err.raw_data|default:'' }}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+    </div>
+
+    <p>
+      <a href="{% url 'admin:enrollment_enrollment_import' %}" class="button">
+        继续导入
+      </a>
+      <a href="{% url opts|admin_urlname:'changelist' %}" class="button" style="margin-left: 8px;">
+        返回报名列表
+      </a>
+    </p>
+
+  {% else %}
+    {# ======== 表单页面 ======== #}
+    <form action="" method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="errornote">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <fieldset class="module aligned">
+        {% for field in form %}
+          <div class="form-row">
+            {{ field.errors }}
+            <label for="{{ field.id_for_label }}">{{ field.label }}：</label>
+            {{ field }}
+            {% if field.help_text %}
+              <div class="help">{{ field.help_text }}</div>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </fieldset>
+
+      <div class="submit-row">
+        <input type="submit" value="📤 开始导入" class="default">
+        <a href="{% url opts|admin_urlname:'changelist' %}" class="button cancel-link">
+          取消返回
+        </a>
+      </div>
+    </form>
+  {% endif %}
+</div>
+{% endblock %}

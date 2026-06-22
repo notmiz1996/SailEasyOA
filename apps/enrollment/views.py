@@ -127,6 +127,22 @@ class EnrollmentImportView(APIView):
             TrainingClass, pk=self.kwargs['class_id'],
         )
 
+        # ============================================================
+        # 校验班级状态 — 只有 ENROLLING 允许导入
+        # ============================================================
+        if training_class.status != ClassStatus.ENROLLING:
+            return Response(
+                {
+                    'code': 'E-BAT-04',
+                    'message': (
+                        f'班级状态不允许导入（当前：{training_class.get_status_display()}），'
+                        f'仅 [报名中] 状态的班级可导入学员'
+                    ),
+                    'data': None,
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
+
         file = request.FILES.get('file')
         if not file:
             return Response(
